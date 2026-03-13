@@ -41,7 +41,6 @@ public class JwtAuthFilter extends AbstractGatewayFilterFactory<JwtAuthFilter.Co
                 return exchange.getResponse().setComplete();
             }
 
-            // Прокидываем userId и phoneNumber в заголовках к downstream сервисам
             Claims claims = extractClaims(token);
             ServerHttpRequest mutatedRequest = exchange.getRequest()
                     .mutate()

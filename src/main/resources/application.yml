@@ -16,35 +16,16 @@ spring:
       server:
         webflux:
 
-          # ── Глобальные фильтры (на все маршруты) ────────────────────────────
           default-filters:
-#            - name: RequestRateLimiter
-#              args:
-#                redis-rate-limiter.replenishRate: 20
-#                redis-rate-limiter.burstCapacity: 40
-#                redis-rate-limiter.requestedTokens: 1
-#                key-resolver: "#{@ipKeyResolver}"
             - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
 
           routes:
 
-            # ── auth-service: публичные эндпоинты (OTP, refresh) ──────────────
+            # ── auth-service: публичные эндпоинты ─────────────────────────────
             - id: auth-public
               uri: http://localhost:8081
               predicates:
                 - Path=/api/auth/send-otp, /api/auth/verify-otp, /api/auth/refresh
-#              filters:
-#                # Отдельный жёсткий лимит — защита от SMS спама
-#                - name: RequestRateLimiter
-#                  args:
-#                    redis-rate-limiter.replenishRate: 3
-#                    redis-rate-limiter.burstCapacity: 5
-#                    redis-rate-limiter.requestedTokens: 1
-#                    key-resolver: "#{@ipKeyResolver}"
-#                - name: CircuitBreaker
-#                  args:
-#                    name: authServiceCB
-#                    fallbackUri: forward:/fallback/auth
 
             # ── auth-service: защищённые эндпоинты ───────────────────────────
             - id: auth-protected
@@ -53,10 +34,6 @@ spring:
                 - Path=/api/users/**
               filters:
                 - JwtAuthFilter
-#                - name: CircuitBreaker
-#                  args:
-#                    name: authServiceCB
-#                    fallbackUri: forward:/fallback/auth
 
             # ── idea-hub: публичное чтение (без JWT) ──────────────────────────
             - id: idea-hub-public
@@ -64,27 +41,19 @@ spring:
               predicates:
                 - Path=/api/ideas, /api/ideas/**, /api/categories, /api/tags
                 - Method=GET
-#              filters:
-#                - name: CircuitBreaker
-#                  args:
-#                    name: ideaHubCB
-#                    fallbackUri: forward:/fallback/idea-hub
 
-            # ── idea-hub: запись (требует JWT) ───────────────────────────────
+            # ── idea-hub: запись (требует JWT) ────────────────────────────────
             - id: idea-hub-protected
               uri: http://localhost:8082
               predicates:
                 - Path=/api/ideas, /api/ideas/**
                 - Method=POST,PUT,DELETE,PATCH
-#              filters:
-#                - JwtAuthFilter
-#                - name: CircuitBreaker
-#                  args:
-#                    name: ideaHubCB
-#                    fallbackUri: forward:/fallback/idea-hub
+              filters:
+                - JwtAuthFilter
 
           # ── CORS ─────────────────────────────────────────────────────────────
           globalcors:
+            add-to-simple-url-handler-mapping: true
             cors-configurations:
               '[/**]':
                 allowedOrigins:
@@ -101,34 +70,9 @@ spring:
                 allowCredentials: true
                 maxAge: 3600
 
-# ── JWT (тот же секрет что и в auth-service) ─────────────────────────────────
 jwt:
   secret: ${JWT_SECRET:your-very-long-secret-key-at-least-256-bits-long-for-security}
 
-## ── Resilience4j Circuit Breaker ──────────────────────────────────────────────
-#resilience4j:
-#  circuitbreaker:
-#    instances:
-#      authServiceCB:
-#        slidingWindowSize: 10
-#        failureRateThreshold: 50
-#        waitDurationInOpenState: 10s
-#        permittedNumberOfCallsInHalfOpenState: 3
-#        automaticTransitionFromOpenToHalfOpenEnabled: true
-#      ideaHubCB:
-#        slidingWindowSize: 10
-#        failureRateThreshold: 50
-#        waitDurationInOpenState: 10s
-#        permittedNumberOfCallsInHalfOpenState: 3
-#        automaticTransitionFromOpenToHalfOpenEnabled: true
-#  timelimiter:
-#    instances:
-#      authServiceCB:
-#        timeoutDuration: 5s
-#      ideaHubCB:
-#        timeoutDuration: 5s
-
-# ── Actuator ──────────────────────────────────────────────────────────────────
 management:
   endpoints:
     web:
@@ -140,7 +84,6 @@ management:
     gateway:
       enabled: true
 
-# ── Logging ───────────────────────────────────────────────────────────────────
 logging:
   level:
     com.project.gateway: DEBUG
