@@ -33,11 +33,12 @@ spring:
               filters:
                 - JwtAuthFilter
 
-            - id: idea-hub-public
+            - id: idea-hub-saves
               uri: http://localhost:8082
               predicates:
-                - Path=/api/ideas, /api/ideas/**, /api/categories, /api/tags
-                - Method=GET
+                - Path=/api/ideas/saved, /api/ideas/mine, /api/ideas/*/save
+              filters:
+                - JwtAuthFilter
 
             - id: idea-hub-protected
               uri: http://localhost:8082
@@ -47,11 +48,35 @@ spring:
               filters:
                 - JwtAuthFilter
 
-            - id: profiler-protected
+            - id: idea-hub-public
+              uri: http://localhost:8082
+              predicates:
+                - Path=/api/ideas, /api/ideas/**, /api/categories, /api/tags
+                - Method=GET
+
+            - id: profiler
               uri: http://localhost:8083
               predicates:
-                - Path=/api/profile, /api/profile/**, /api/partner/**
-                - Method=GET,POST,PUT,DELETE,PATCH
+                - Path=/api/profile/**, /api/partner/**
+              filters:
+                - JwtAuthFilter
+
+            - id: dating
+              uri: http://localhost:8084
+              predicates:
+                - Path=/api/dates/**
+              filters:
+                - JwtAuthFilter
+
+            - id: dating-ws
+              uri: http://localhost:8084
+              predicates:
+                - Path=/ws/**
+
+            - id: swipes
+              uri: http://localhost:8085
+              predicates:
+                - Path=/api/swipes/**
               filters:
                 - JwtAuthFilter
 
@@ -85,7 +110,7 @@ management:
     health:
       show-details: always
     gateway:
-      enabled: true
+      access: true
 
 logging:
   level:
